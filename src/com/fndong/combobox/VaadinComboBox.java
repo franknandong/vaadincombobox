@@ -12,8 +12,12 @@ import com.vaadin.data.util.BeanItemContainer;
 import com.vaadin.server.VaadinRequest;
 import com.vaadin.server.VaadinServlet;
 import com.vaadin.shared.ui.combobox.FilteringMode;
-
+import com.vaadin.ui.Alignment;
+import com.vaadin.ui.Button;
 import com.vaadin.ui.ComboBox;
+import com.vaadin.ui.GridLayout;
+import com.vaadin.ui.Notification;
+import com.vaadin.ui.Notification.Type;
 import com.vaadin.ui.UI;
 import com.vaadin.ui.VerticalLayout;
 
@@ -44,13 +48,19 @@ public class VaadinComboBox extends UI {
 		layout.setMargin(true);
 		setContent(layout);
 		
-		
+		GridLayout grid = new GridLayout(3,1);
+		Button btnSubmit = new Button("Submit");
 		combofirst= createFirstComboSelect(); // state combobox
 		combosecond = createSecondComboSelect(); // district combobox
-	
-	
-		layout.addComponent(combofirst);
-		layout.addComponent(combosecond);
+		grid.setSpacing(true);
+		grid.setSizeFull();
+		grid.setSizeUndefined();
+		grid.addComponent(combofirst);
+		grid.addComponent(combosecond);
+		grid.addComponent(btnSubmit);
+		// java.lang.IllegalArgumentException: Component must be added to layout before using setComponentAlignment()
+		grid.setComponentAlignment(btnSubmit,Alignment.BOTTOM_LEFT);
+		layout.addComponent(grid);
 	}
 	
 	private ComboBox createFirstComboSelect() { // state combobox
@@ -59,13 +69,27 @@ public class VaadinComboBox extends UI {
          ComboBox s = new ComboBox("RefState", objects);
         s.setItemCaptionPropertyId("statename");
         s.setImmediate(true);
-		
-		s.addValueChangeListener(new ValueChangeListener() {
+
+   /*     s.addValueChangeListener(new ValueChangeListener() {
 			@Override
 			public void valueChange(ValueChangeEvent event) {
 				 objectsDistrict.addAll( findDistrictSelection((RefState) event.getProperty().getValue()));
 			}
-		});
+		});*/
+
+		// add lambda expression - java 8 
+		s.addValueChangeListener((ValueChangeListener)
+				(ValueChangeEvent) -> {
+				  try {
+					  combosecond.removeAllItems();
+					  objectsDistrict.addAll(findDistrictSelection((RefState) ValueChangeEvent.getProperty().getValue()));
+					} catch (Exception e) {
+						// TODO: handle exception
+						e.printStackTrace();
+						 Notification.show("Error on Selection Records",
+		                            Type.ERROR_MESSAGE);
+					}
+				});
 		
 		return s;
 	}
@@ -73,6 +97,7 @@ public class VaadinComboBox extends UI {
 	private ComboBox createSecondComboSelect() {
 		
     	ComboBox districtcombo = new ComboBox("refDistrict"); // combox box District with objects values
+    	districtcombo.setValue("district");
     	districtcombo.setContainerDataSource(objectsDistrict);
     	// Allow adding new items
     	districtcombo.setItemCaptionPropertyId("refdistrictname");
